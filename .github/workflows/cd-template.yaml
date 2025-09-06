@@ -5,7 +5,7 @@ on:
     inputs:
       terraform_action:
         description: 'Terraform Action to perform'
-        default: 'apply'
+        default: 'plan'
         type: string
       root_module_folder_relative_path:
         description: 'Root Module Folder Relative Path'
@@ -93,6 +93,7 @@ jobs:
   apply:
     needs: plan
     name: Apply with Terraform
+    if: ${{ inputs.terraform_action == 'apply' || inputs.terraform_action == 'destroy' }}
     runs-on:
       ubuntu-latest
     concurrency: mgmt-tfstate

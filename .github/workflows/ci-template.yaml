@@ -5,7 +5,7 @@ on:
     inputs:
       root_module_folder_relative_path:
         description: 'Root Module Folder Relative Path'
-        default: '.'
+        default: '.' # Adjusted default to current directory
         type: string
       terraform_cli_version:
         description: 'Terraform CLI Version'
@@ -29,13 +29,15 @@ jobs:
           terraform_version: ${{ inputs.terraform_cli_version }}
 
       - name: Terraform Format Check
+        # change its working root directory to the specified path before executing any command.
         run: |
-          terraform \
-          -chdir="${{inputs.root_module_folder_relative_path}}" \
-          fmt \
-          -check
+            terraform \
+            -chdir="${{inputs.root_module_folder_relative_path}}" \
+            fmt \
+            -check
 
       - name: Terraform Init
+        # backend=false to skip backend initialization/configuration as we are only validating the configuration.
         run: |
           terraform \
           -chdir="${{inputs.root_module_folder_relative_path}}" \
@@ -51,10 +53,11 @@ jobs:
   plan:
     name: Validate Terraform Plan
     needs: validate
+    
     runs-on:
       ubuntu-latest
-    concurrency: mgmt-tfstate
-    environment: alz-mgmt-plan
+    concurrency: mgmt-tfstate # Ensure only one plan/apply at a time to avoid state file conflicts this is the name of storage container as well where tfstate is stored.
+    environment: alz-mgmt-plan # this is in the environment variable for the repository.
     permissions:
       # NOTE: When modifying the token subject claims and adding `environment`.
       # If the `id-token` permission is granted at the workflow level
@@ -64,10 +67,11 @@ jobs:
       contents: read
       pull-requests: write
     env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
+      # this is in the secrets and variables/actions for the repository.
+      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}" # azure managed identity - id-alz-mgmt-uksouth-plan-001 with federated cred and rbac roles
       ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
       ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
-      ARM_USE_AZUREAD: true
+      ARM_USE_AZUREAD: true # Use Azure AD authentication for the id-alz-mgmt-uksouth-plan-001 managed identity
       ARM_USE_OIDC: true
     steps:
       - name: Checkout Code
